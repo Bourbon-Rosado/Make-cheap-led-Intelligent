@@ -42,8 +42,8 @@ void wifiSetup() {
     WiFi.mode(WIFI_STA);
 
     // Connect
-    Serial.printf("[WIFI] Connecting to %s ", "Livebox-CF10");
-    WiFi.begin("Livebox-CF10", "g9G9NhKEpvm3Ec6qWi");
+    Serial.printf("[WIFI] Connecting to %s ", "Livebox");
+    WiFi.begin("Livebox", "Password123");
 
     // Wait
     while (WiFi.status() != WL_CONNECTED) {
