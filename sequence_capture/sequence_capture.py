@@ -5,43 +5,43 @@ import math
 from itertools import zip_longest
 
 # Configura el puerto serial
-ser = serial.Serial('COM8', 115200)  # Reemplaza COM3 por tu puerto
-time.sleep(2)  # Espera a que Arduino reinicie
+ser = serial.Serial('COM12', 9600)  
+time.sleep(2)  
 
 # Crear archivo Excel
 wb = openpyxl.Workbook()
 ws = wb.active
 ws.title = "Bits Interrumpidos"
-#ws.append(["ON", "OFF","Decrease","Increase","White","Blue","Green","Red"])
 
 # Inicializa variables
+CANTIDAD_LECTURAS = 300
 promedio = 0
 contador = -1
 Secuencia = [[],[],[],[],[],[],[],[],[],[],[]]
 Bits = [[],[],[],[],[],[],[],[],[],[]]
 
+# Deside en funcion del tiempo si es un 0 o un 1 usando el protocolo NEC
+
 def cantidad_de_bits(n):
-    if 8 < n :
-        return 0
-    elif 1.68 > n:
-        return 1
-    else:
+    if 8 < n : # Frame inicial 9ms y 4.5ms
         return 2
-        
-    
+    elif 1.68 > n: # 0 logico 
+        return 0
+    else:
+        return 1  # 1  logico
 
 try:
-    for i in range(300):  # Número de cambios a registrar
+    for i in range(CANTIDAD_LECTURAS):  # Número de cambios a registrar
 
         line = ser.readline().decode('utf-8').strip()
 
-        if i == 0: # Tiempo en milisegundos
+        if i == 0: 
             start_time = time.perf_counter()
-            time_anterior_ms = start_time
+            time_anterior_ms = 0
             
         time_actual_ms = (time.perf_counter() - start_time) * 1000
 
-        diferencia_tmp = round(abs(time_actual_ms - time_anterior_ms),2)
+        diferencia_tmp = round(abs(time_actual_ms - time_anterior_ms),3)
         
         if diferencia_tmp > 500:
             contador = contador + 1
@@ -50,46 +50,39 @@ try:
             break
 
         time_anterior_ms = time_actual_ms
-
         Secuencia[contador].append(diferencia_tmp)
 
-    #print(Secuencia)
-                        
-    print(Secuencia)
+    for i in range(10):
+        print(f'{Secuencia[i]}\n')
     
+        
     for k in range(10):
         Bits[k].append(1)
         for i in range (0, len(Secuencia[k])):
-            
-            if cantidad_de_bits(Secuencia[k][i]) == 0:
-                for j in range(0,16):
-                    Bits[k].append(0)
-                for j in range(0,8):
-                    Bits[k].append(1)
 
-            if cantidad_de_bits(Secuencia[k][i]) == 1:
+            if cantidad_de_bits(Secuencia[k][i]) == 0:
                 Bits[k].append(0)
                 Bits[k].append(1)
 
-            if cantidad_de_bits(Secuencia[k][i]) == 2:
+            elif cantidad_de_bits(Secuencia[k][i]) == 1:
                 Bits[k].append(0)
-                for j in range(0,3):
+                for j in range(3):
+                    Bits[k].append(1)
+            else:
+                for j in range(16):
+                    Bits[k].append(0)
+                for j in range(8):
                     Bits[k].append(1)
 
 
-    print(Bits[1])
     matriz_transpuesta = list(zip_longest(*Bits))
 
     for fila in matriz_transpuesta:
         ws.append(fila)
-    #for i in range (0, 50):
-    #        ws.append(Bits[1])
-
-
          
     print(len(Bits[0]))
     wb.save("Muetreo de secuencias NEC.xlsx")
-    print("Archivo guardado: secuencia de bits.xlsx")       
+    print("Archivo guardado: Muetreo de secuencias NEC.xlsx")       
 
 except KeyboardInterrupt:
     print("Cancelado por el usuario.")
